@@ -22,6 +22,7 @@
 import os
 import logging
 import time
+import torch as th
 
 from .dataloader import EvalDataset, TrainDataset, NewBidirectionalOneShotIterator
 from .dataloader import get_dataset
@@ -33,7 +34,7 @@ assert backend.lower() == 'pytorch'
 import torch
 import numpy as np
 import torch.multiprocessing as mp
-from .train_pytorch import load_model
+from .train_pytorch import load_model, load_model_from_checkpoint
 from .train_pytorch import train, train_mp
 from .train_pytorch import test, test_mp
 from ogb.lsc import WikiKG90MDataset, WikiKG90MEvaluator
@@ -43,7 +44,8 @@ def set_global_seed(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     np.random.seed(seed)
-    torch.backends.cudnn.deterministic=True
+    torch.backends.cudnn.deterministic = True
+
 
 class ArgParser(CommonArgParser):
     def __init__(self):
@@ -52,20 +54,20 @@ class ArgParser(CommonArgParser):
         self.add_argument('--gpu', type=int, default=[-1], nargs='+',
                           help='A list of gpu ids, e.g. 0 1 2 4')
         self.add_argument('--mix_cpu_gpu', action='store_true',
-                          help='Training a knowledge graph embedding model with both CPUs and GPUs.'\
-                                  'The embeddings are stored in CPU memory and the training is performed in GPUs.'\
-                                  'This is usually used for training a large knowledge graph embeddings.')
+                          help='Training a knowledge graph embedding model with both CPUs and GPUs.' \
+                               'The embeddings are stored in CPU memory and the training is performed in GPUs.' \
+                               'This is usually used for training a large knowledge graph embeddings.')
         self.add_argument('--valid', action='store_true',
                           help='Evaluate the model on the validation set in the training.')
         self.add_argument('--rel_part', action='store_true',
                           help='Enable relation partitioning for multi-GPU training.')
         self.add_argument('--async_update', action='store_true',
-                          help='Allow asynchronous update on node embedding for multi-GPU training.'\
-                                  'This overlaps CPU and GPU computation to speed up.')
+                          help='Allow asynchronous update on node embedding for multi-GPU training.' \
+                               'This overlaps CPU and GPU computation to speed up.')
         self.add_argument('--has_edge_importance', action='store_true',
-                          help='Allow providing edge importance score for each edge during training.'\
-                                  'The positive score will be adjusted '\
-                                  'as pos_score = pos_score * edge_importance')
+                          help='Allow providing edge importance score for each edge during training.' \
+                               'The positive score will be adjusted ' \
+                               'as pos_score = pos_score * edge_importance')
 
         self.add_argument('--print_on_screen', action='store_true')
         self.add_argument('--encoder_model_name', type=str, default='shallow',
@@ -75,17 +77,62 @@ class ArgParser(CommonArgParser):
         self.add_argument('--seed', type=int, default=0,
                           help='random seed')
 
+        self.add_argument('--eval_sample_num', type=int, default=10,
+                          help='when eval, how mush data must be abandon')
+
+        self.add_argument('--dtype', type=int, default=32,
+                          help='load entity feature as float16')
+
+        self.add_argument('--ckpts', type=str, default='',
+                          help='checkpoint model be used continue train')
+
+        self.add_argument('--is_eval', type=int, default=0,
+                          help='mode param not be init')
+
+        self.add_argument('--save_float16', type=int, default=0,
+                          help='mode param not be init')
+
+        self.add_argument('--save_entity_emb', type=int, default=0,
+                          help='mode param not be init')
+
+        self.add_argument('--save_rel_emb', type=int, default=0,
+                          help='mode param not be init')
+
+        self.add_argument('--save_mlp', type=int, default=1,
+                          help='mode param not be init')
+
+        self.add_argument('--use_mmap', type=int, default=1,
+                          help='mode param not be init')
+
+        self.add_argument('--use_valid_train', type=int, default=0,
+                          help='mode param not be init')
+
+        self.add_argument('--use_lr_decay', type=int, default=0,
+                          help='todo')
+
+        self.add_argument('--use_relation_weight', type=int, default=0,
+                          help='todo')
+
+
 def prepare_save_path(args):
-    if not os.path.exists(args.save_path):
+    if not os.path.exists(args.save_path): #ckpts/
         os.mkdir(args.save_path)
 
-    folder = '{}_{}_{}_d_{}_g_{}'.format(args.model_name, args.dataset, args.encoder_model_name, args.hidden_dim, args.gamma)
+    folder = '{}_{}_{}_d_{}_g_{}_lr_{}_seed_{}'.format(args.model_name, args.dataset, args.encoder_model_name, args.hidden_dim,
+                                         args.gamma, args.lr, args.seed)
     n = len([x for x in os.listdir(args.save_path) if x.startswith(folder)])
     folder += str(n)
     args.save_path = os.path.join(args.save_path, folder)
 
     if not os.path.exists(args.save_path):
         os.makedirs(args.save_path)
+
+    conf_file = os.path.join(args.save_path, 'config.json')
+    dict = {}
+    config = args
+    dict.update(vars(config))
+    with open(conf_file, 'w') as outfile:
+        json.dump(dict, outfile, indent=4)
 
 def set_logger(args):
     '''
@@ -99,6 +146,7 @@ def set_logger(args):
         filename=log_file,
         filemode='a+'
     )
+
     if args.print_on_screen:
         console = logging.StreamHandler()
         console.setLevel(logging.INFO)
@@ -106,10 +154,11 @@ def set_logger(args):
         console.setFormatter(formatter)
         logging.getLogger('').addHandler(console)
 
+
 def main():
     args = ArgParser().parse_args()
     prepare_save_path(args)
-    assert args.dataset =='wikikg90m'
+    assert args.dataset == 'wikikg90m'
     args.neg_sample_size_eval = 1000
     set_global_seed(args.seed)
 
@@ -134,7 +183,7 @@ def main():
     # We need to ensure that the number of processes should match the number of GPUs.
     if len(args.gpu) > 1 and args.num_proc > 1:
         assert args.num_proc % len(args.gpu) == 0, \
-                'The number of processes needs to be divisible by the number of GPUs'
+            'The number of processes needs to be divisible by the number of GPUs'
     # For multiprocessing training, we need to ensure that training processes are synchronized periodically.
     if args.num_proc > 1:
         args.force_sync_interval = 1000
@@ -144,20 +193,21 @@ def main():
         assert not args.eval_filter, "if negative sampling based on degree, we can't filter positive edges."
 
     args.soft_rel_part = args.mix_cpu_gpu and args.rel_part
-    print ("To build training dataset")
+    print("To build training dataset")
     t1 = time.time()
     train_data = TrainDataset(dataset, args, ranks=args.num_proc, has_importance=args.has_edge_importance)
-    print ("Training dataset built, it takes %d seconds"%(time.time()-t1))
+    print("Training dataset built, it takes %d seconds" % (time.time() - t1))
     # if there is no cross partition relaiton, we fall back to strict_rel_part
     args.strict_rel_part = args.mix_cpu_gpu and (train_data.cross_part == False)
-    args.num_workers = 8 # fix num_worker to 8
+    args.num_workers = 32  # fix num_worker to 8
     set_logger(args)
+    print(vars(args))
     with open(os.path.join(args.save_path, args.encoder_model_name), 'w') as f:
         f.write(args.encoder_model_name)
     if args.num_proc > 1:
         train_samplers = []
         for i in range(args.num_proc):
-            print ("Building training sampler for proc %d"%i)
+            print("Building training sampler for proc %d" % i)
             t1 = time.time()
             # for each GPU, allocate num_proc // num_GPU processes
             train_sampler_head = train_data.create_sampler(args.batch_size,
@@ -180,13 +230,13 @@ def main():
                                                                   args.neg_sample_size, args.neg_sample_size,
                                                                   True, dataset.n_entities,
                                                                   args.has_edge_importance))
-            print("Training sampler for proc %d created, it takes %s seconds"%(i, time.time()-t1))
+            print("Training sampler for proc %d created, it takes %s seconds" % (i, time.time() - t1))
 
         train_sampler = NewBidirectionalOneShotIterator(train_sampler_head, train_sampler_tail,
                                                         args.neg_sample_size, args.neg_sample_size,
-                                                       True, dataset.n_entities,
-                                                       args.has_edge_importance)
-    else: # This is used for debug
+                                                        True, dataset.n_entities,
+                                                        args.has_edge_importance)
+    else:  # This is used for debug
         train_sampler_head = train_data.create_sampler(args.batch_size,
                                                        args.neg_sample_size,
                                                        args.neg_sample_size,
@@ -206,7 +256,6 @@ def main():
                                                         True, dataset.n_entities,
                                                         args.has_edge_importance)
 
-
     if args.valid or args.test:
         if len(args.gpu) > 1:
             args.num_test_proc = args.num_proc if args.num_proc < len(args.gpu) else len(args.gpu)
@@ -222,7 +271,7 @@ def main():
             # valid_sampler_heads = []
             valid_sampler_tails = []
             for i in range(args.num_proc):
-                print("creating valid sampler for proc %d"%i)
+                print("creating valid sampler for proc %d" % i)
                 t1 = time.time()
                 # valid_sampler_head = eval_dataset.create_sampler('valid', args.batch_size_eval,
                 #                                                   args.neg_sample_size_eval,
@@ -232,16 +281,16 @@ def main():
                 #                                                   num_workers=args.num_workers,
                 #                                                   rank=i, ranks=args.num_proc)
                 valid_sampler_tail = eval_dataset.create_sampler('valid', args.batch_size_eval,
-                                                                  args.neg_sample_size_eval,
-                                                                  args.neg_sample_size_eval,
-                                                                  args.eval_filter,
-                                                                  mode='tail',
-                                                                  num_workers=args.num_workers,
-                                                                  rank=i, ranks=args.num_proc)
+                                                                 args.neg_sample_size_eval,
+                                                                 args.neg_sample_size_eval,
+                                                                 args.eval_filter,
+                                                                 mode='tail',
+                                                                 num_workers=args.num_workers,
+                                                                 rank=i, ranks=args.num_proc)
                 # valid_sampler_heads.append(valid_sampler_head)
                 valid_sampler_tails.append(valid_sampler_tail)
-                print("Valid sampler for proc %d created, it takes %s seconds"%(i, time.time()-t1))
-        else: # This is used for debug
+                print("Valid sampler for proc %d created, it takes %s seconds" % (i, time.time() - t1))
+        else:  # This is used for debug
             # valid_sampler_head = eval_dataset.create_sampler('valid', args.batch_size_eval,
             #                                                  args.neg_sample_size_eval,
             #                                                  1,
@@ -261,7 +310,7 @@ def main():
             test_sampler_tails = []
             # test_sampler_heads = []
             for i in range(args.num_test_proc):
-                print("creating test sampler for proc %d"%i)
+                print("creating test sampler for proc %d" % i)
                 t1 = time.time()
                 # test_sampler_head = eval_dataset.create_sampler('test', args.batch_size_eval,
                 #                                                  args.neg_sample_size_eval,
@@ -271,15 +320,15 @@ def main():
                 #                                                  num_workers=args.num_workers,
                 #                                                  rank=i, ranks=args.num_test_proc)
                 test_sampler_tail = eval_dataset.create_sampler('test', args.batch_size_eval,
-                                                                 args.neg_sample_size_eval,
-                                                                 args.neg_sample_size_eval,
-                                                                 args.eval_filter,
-                                                                 mode='tail',
-                                                                 num_workers=args.num_workers,
-                                                                 rank=i, ranks=args.num_test_proc)
+                                                                args.neg_sample_size_eval,
+                                                                args.neg_sample_size_eval,
+                                                                args.eval_filter,
+                                                                mode='tail',
+                                                                num_workers=args.num_workers,
+                                                                rank=i, ranks=args.num_test_proc)
                 # test_sampler_heads.append(test_sampler_head)
                 test_sampler_tails.append(test_sampler_tail)
-                print("Test sampler for proc %d created, it takes %s seconds"%(i, time.time()-t1))
+                print("Test sampler for proc %d created, it takes %s seconds" % (i, time.time() - t1))
         else:
             # test_sampler_head = eval_dataset.create_sampler('test', args.batch_size_eval,
             #                                                 args.neg_sample_size_eval,
@@ -299,11 +348,20 @@ def main():
     # load model
     print("To create model")
     t1 = time.time()
-    model = load_model(args, dataset.n_entities, dataset.n_relations, dataset.entity_feat.shape[1], dataset.relation_feat.shape[1])
+    if args.ckpts == '':
+        print('====build new model===')
+        model = load_model(args, dataset.n_entities, dataset.n_relations, dataset.entity_feat.shape[1],
+                           dataset.relation_feat.shape[1])
+    else:
+        print('===load pre model continue train===')
+        model = load_model_from_checkpoint(args, dataset.n_entities, dataset.n_relations, args.ckpts, ent_feat_dim=768,
+                                           rel_feat_dim=768)
+
     if args.encoder_model_name in ['roberta', 'concat']:
         model.entity_feat.emb = dataset.entity_feat
         model.relation_feat.emb = dataset.relation_feat
-    print("Model created, it takes %s seconds" % (time.time()-t1))
+
+    print("Model created, it takes %s seconds" % (time.time() - t1))
     model.evaluator = WikiKG90MEvaluator()
 
     if args.num_proc > 1 or args.async_update:
@@ -321,7 +379,7 @@ def main():
     start = time.time()
     rel_parts = train_data.rel_parts if args.strict_rel_part or args.soft_rel_part else None
     cross_rels = train_data.cross_rels if args.soft_rel_part else None
-    
+
     if args.num_proc > 1:
         procs = []
         barrier = mp.Barrier(args.num_proc)
@@ -352,6 +410,7 @@ def main():
         train(args, model, train_sampler, valid_samplers, test_samplers, rel_parts=rel_parts)
 
     print('training takes {} seconds'.format(time.time() - start))
+
 
 if __name__ == '__main__':
     main()

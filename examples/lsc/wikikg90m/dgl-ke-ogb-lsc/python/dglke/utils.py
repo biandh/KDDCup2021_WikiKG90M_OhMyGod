@@ -203,7 +203,7 @@ class CommonArgParser(argparse.ArgumentParser):
         self.add_argument('--model_name', default='TransE',
                           choices=['TransE', 'TransE_l1', 'TransE_l2', 'TransR',
                                    'RESCAL', 'DistMult', 'ComplEx', 'RotatE',
-                                   'SimplE'],
+                                   'SimplE', 'AutoSF', 'PairRE'],
                           help='The models provided by DGL-KE.')
         self.add_argument('--data_path', type=str, default='data',
                           help='The path of the directory where DGL-KE loads knowledge graph data.')
@@ -266,7 +266,7 @@ class CommonArgParser(argparse.ArgumentParser):
                           help='We force a synchronization between processes every x steps for'\
                                   'multiprocessing training. This potentially stablizes the training process'
                                   'to get a better performance. For multiprocessing training, it is set to 1000 by default.')
-        self.add_argument('--hidden_dim', type=int, default=400,
+        self.add_argument('--hidden_dim', type=int, default=768,
                           help='The embedding size of relation and entity')
         self.add_argument('--lr', type=float, default=0.01,
                           help='The learning rate. DGL-KE uses Adagrad to optimize the model parameters.')

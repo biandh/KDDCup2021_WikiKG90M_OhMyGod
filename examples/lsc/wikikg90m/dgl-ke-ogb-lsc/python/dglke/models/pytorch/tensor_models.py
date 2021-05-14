@@ -229,11 +229,20 @@ class ExternalEmbedding:
         self.trace = []
         self.is_feat = is_feat
         if not is_feat:
-            self.emb = th.empty(num, dim, dtype=th.float32, device=device)
-            self.state_sum = self.emb.new().resize_(self.emb.size(0)).zero_()
+            print('--create 8KW的token empty embeding---')
+            if self.args.dtype == 16:
+                print('--dtype 16--')
+                self.emb = th.empty(num, dim, dtype=th.float16, device=device)
+            else:
+                print('--dtype 32--')
+                self.emb = th.empty(num, dim, dtype=th.float32, device=device)
+
+            self.state_sum = self.emb.new().resize_(self.emb.size(0)).zero_().type(th.float32)
+            print('--create done---')
         else:
             self.emb = None
             self.state_sum = None
+
         self.state_step = 0
         self.has_cross_rel = False
         # queue used by asynchronous update
@@ -249,6 +258,7 @@ class ExternalEmbedding:
         emb_init : float
             The intial embedding range should be [-emb_init, emb_init].
         """
+        print("---emb_init:", emb_init)
         INIT.uniform_(self.emb, -emb_init, emb_init)
         INIT.zeros_(self.state_sum)
 
@@ -288,6 +298,7 @@ class ExternalEmbedding:
         """
         if self.is_feat:
             assert not trace
+
         if self.has_cross_rel:
             cpu_idx = idx.cpu()
             cpu_mask = self.cpu_bitmap[cpu_idx]
@@ -296,11 +307,19 @@ class ExternalEmbedding:
             if cpu_idx.shape[0] != 0:
                 cpu_emb = self.global_emb.emb[cpu_idx]
                 self.emb[cpu_idx] = cpu_emb.cuda(gpu_id)
-        if self.is_feat:
+
+        if self.is_feat or 'numpy' in str(type(self.emb)):
             assert not trace
-            s = th.from_numpy(self.emb[idx.numpy()]).to(th.float)
+            if 'numpy' in str(type(self.emb)):
+                s = th.from_numpy(self.emb[idx.numpy()]).to(th.float)
+            else:
+                s = self.emb[idx]
         else:
+            # print("---get entity emb ---")
             s = self.emb[idx]
+            if 'numpy' in str(type(s)):
+                s = th.from_numpy(s).to(th.float)
+
         if gpu_id >= 0:
             s = s.cuda(gpu_id)
         # During the training, we need to trace the computation.
@@ -310,6 +329,7 @@ class ExternalEmbedding:
             self.trace.append((idx, data))
         else:
             data = s
+
         return data
 
     def update(self, gpu_id=-1):
@@ -326,10 +346,11 @@ class ExternalEmbedding:
         with th.no_grad():
             for idx, data in self.trace:
                 grad = data.grad.data
-
                 clr = self.args.lr
+                if self.args.use_lr_decay:
+                    clr = self.args.lr * 1.0 / (1 + self.state_step / 3 * 0.0001)
                 #clr = self.args.lr / (1 + (self.state_step - 1) * group['lr_decay'])
-
+                print('cur_lr: %s' % clr)
                 # the update is non-linear so indices must be unique
                 grad_indices = idx
                 grad_values = grad
@@ -401,8 +422,12 @@ class ExternalEmbedding:
         name : str
             Embedding name.
         """
-        file_name = os.path.join(path, name+'.npy')
-        np.save(file_name, self.emb.cpu().detach().numpy())
+        file_name = os.path.join(path, name + '.npy')
+        if self.args.save_float16:
+            print('---save_embeddings_float16---')
+            np.save(file_name, self.emb.cpu().type(th.float16).detach().numpy())
+        else:
+            np.save(file_name, self.emb.cpu().detach().numpy())
 
     def load(self, path, name):
         """Load embeddings.
@@ -414,5 +439,23 @@ class ExternalEmbedding:
         name : str
             Embedding name.
         """
-        file_name = os.path.join(path, name+'.npy')
-        self.emb = th.Tensor(np.load(file_name))
+        file_name = os.path.join(path, name + '.npy')
+        # self.emb = np.load(file_name, mmap_mode='r')
+        #self.emb = th.Tensor(np.load(file_name))
+        if self.args.use_mmap and self.is_feat:
+            print('path: %s' % file_name)
+            print('--use_mmap--')
+            self.emb = np.load(file_name, mmap_mode='r')
+            print('---self.emb.shape: ', self.emb.shape)
+
+        elif self.args.dtype == 16:
+            print('--load embeding as dtype==float16 ---')
+            self.emb = th.tensor(np.load(file_name), dtype=th.float16)
+            print('---self.emb type:', self.emb.dtype)
+            print('---self.emb.shape: ', self.emb.shape)
+
+        else:
+            print('--load embeding as dtype==float32 ---')
+            self.emb = th.Tensor(np.load(file_name))
+            print('---self.emb type:', self.emb.dtype)
+            print('---self.emb.shape: ', self.emb.shape)
