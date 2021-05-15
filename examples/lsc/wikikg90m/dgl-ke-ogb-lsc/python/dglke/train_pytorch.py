@@ -229,7 +229,9 @@ def train(args, model, train_sampler, valid_samplers=None, test_samplers=None, r
                     save_model(args, model, None, None) #保存2个最佳的模型
                     if os.path.exists(max_mrr_path[0]):
                         print('delete_path:', max_mrr_path[0])
-                        os.remove(max_mrr_path[0])
+                        cmd = 'rm -rf ' + max_mrr_path[0]
+                        print('cmd:', cmd)
+                        os.system(cmd)
 
                     max_mrr_path = max_mrr_path[1:] + [args.save_path]
                     print('proc {} model saved'.format(rank))
@@ -252,7 +254,10 @@ def train(args, model, train_sampler, valid_samplers=None, test_samplers=None, r
             if param_dict['lr'] != args.lr:
                 print('update lr from %s to %s' % (args.lr, param_dict['lr']))
                 args.lr = param_dict['lr']
-                param_dict = None
+            else:
+                print('not update lr:', args.lr)
+
+            param_dict = None
 
             # if param_dict['lr'] != args.lr:
             #     print('update lr from %s to %s' % (args.lr, param_dict['lr']))

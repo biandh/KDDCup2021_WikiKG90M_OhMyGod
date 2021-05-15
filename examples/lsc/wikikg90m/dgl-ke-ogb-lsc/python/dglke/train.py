@@ -22,6 +22,7 @@
 import os
 import logging
 import time
+import random
 import torch as th
 
 from .dataloader import EvalDataset, TrainDataset, NewBidirectionalOneShotIterator
@@ -45,6 +46,7 @@ def set_global_seed(seed):
     torch.cuda.manual_seed(seed)
     np.random.seed(seed)
     torch.backends.cudnn.deterministic = True
+    random.seed(seed)
 
 
 class ArgParser(CommonArgParser):
@@ -121,7 +123,7 @@ def prepare_save_path(args):
     folder = '{}_{}_{}_d_{}_g_{}_lr_{}_seed_{}'.format(args.model_name, args.dataset, args.encoder_model_name, args.hidden_dim,
                                          args.gamma, args.lr, args.seed)
     n = len([x for x in os.listdir(args.save_path) if x.startswith(folder)])
-    folder += str(n)
+    folder += "_" + str(n)
     args.save_path = os.path.join(args.save_path, folder)
 
     if not os.path.exists(args.save_path):
@@ -132,6 +134,7 @@ def prepare_save_path(args):
     config = args
     dict.update(vars(config))
     with open(conf_file, 'w') as outfile:
+        print('conf_file in:', conf_file)
         json.dump(dict, outfile, indent=4)
 
 def set_logger(args):
