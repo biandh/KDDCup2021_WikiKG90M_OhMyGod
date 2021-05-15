@@ -48,7 +48,6 @@ def set_global_seed(seed):
     torch.backends.cudnn.deterministic = True
     random.seed(seed)
 
-
 class ArgParser(CommonArgParser):
     def __init__(self):
         super(ArgParser, self).__init__()

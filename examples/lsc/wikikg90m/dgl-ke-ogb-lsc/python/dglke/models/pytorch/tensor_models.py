@@ -230,14 +230,8 @@ class ExternalEmbedding:
         self.is_feat = is_feat
         if not is_feat:
             print('--create 8KW的token empty embeding---')
-            if self.args.dtype == 16:
-                print('--dtype 16--')
-                self.emb = th.empty(num, dim, dtype=th.float16, device=device)
-            else:
-                print('--dtype 32--')
-                self.emb = th.empty(num, dim, dtype=th.float32, device=device)
-
-            self.state_sum = self.emb.new().resize_(self.emb.size(0)).zero_().type(th.float32)
+            self.emb = th.empty(num, dim, dtype=th.float32, device=device)
+            self.state_sum = self.emb.new().resize_(self.emb.size(0)).zero_()
             print('--create done---')
         else:
             self.emb = None
@@ -336,7 +330,6 @@ class ExternalEmbedding:
         """ Update embeddings in a sparse manner
         Sparse embeddings are updated in mini batches. we maintains gradient states for
         each embedding so they can be updated separately.
-
         Parameters
         ----------
         gpu_id : int
@@ -347,10 +340,10 @@ class ExternalEmbedding:
             for idx, data in self.trace:
                 grad = data.grad.data
                 clr = self.args.lr
-                if self.args.use_lr_decay:
-                    clr = self.args.lr * 1.0 / (1 + self.state_step / 3 * 0.0001)
+                if self.state_step % 3 == 1:
+                    print('clr:', clr)
                 #clr = self.args.lr / (1 + (self.state_step - 1) * group['lr_decay'])
-                print('cur_lr: %s' % clr)
+
                 # the update is non-linear so indices must be unique
                 grad_indices = idx
                 grad_values = grad
