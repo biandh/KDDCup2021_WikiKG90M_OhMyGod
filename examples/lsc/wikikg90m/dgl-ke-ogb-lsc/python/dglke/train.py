@@ -114,6 +114,9 @@ class ArgParser(CommonArgParser):
         self.add_argument('--use_relation_weight', type=int, default=0,
                           help='todo')
 
+        self.add_argument('--use_2_layer_mlp', type=int, default=1,
+                    help='todo')
+
 
 def prepare_save_path(args):
     if not os.path.exists(args.save_path): #ckpts/

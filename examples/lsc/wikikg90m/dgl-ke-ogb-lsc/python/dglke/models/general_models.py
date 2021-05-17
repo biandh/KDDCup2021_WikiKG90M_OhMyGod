@@ -301,11 +301,11 @@ class KEModel(object):
             print('relation_dim: ', relation_dim)
             print('use self.transform_net')
 
-            self.transform_net = MLP(entity_dim + ent_feat_dim, entity_dim, relation_dim + rel_feat_dim, relation_dim)
+            self.transform_net = MLP(entity_dim + ent_feat_dim, entity_dim, relation_dim + rel_feat_dim, relation_dim, args)
             # self.transform_e_net = torch.nn.Linear(entity_dim, entity_dim)
             # self.transform_r_net = torch.nn.Linear(relation_dim, relation_dim)
         elif self.encoder_model_name == 'roberta':
-            self.transform_net = MLP(ent_feat_dim, entity_dim, rel_feat_dim, relation_dim)
+            self.transform_net = MLP(ent_feat_dim, entity_dim, rel_feat_dim, relation_dim, args)
 
         self.rel_dim = rel_dim
         self.entity_dim = entity_dim
