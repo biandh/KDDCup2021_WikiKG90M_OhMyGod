@@ -203,7 +203,7 @@ def main():
     train_data = TrainDataset(dataset, args, ranks=args.num_proc, has_importance=args.has_edge_importance)
     print("Training dataset built, it takes %d seconds" % (time.time() - t1))
     # if there is no cross partition relaiton, we fall back to strict_rel_part
-    args.strict_rel_part = args.mix_cpu_gpu and (train_data.cross_part == False)
+    args.strict_rel_part = False # args.mix_cpu_gpu and (train_data.cross_part == False)
     args.num_workers = 32  # fix num_worker to 8
     set_logger(args)
     print(vars(args))
