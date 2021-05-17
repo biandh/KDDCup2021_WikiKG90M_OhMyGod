@@ -23,6 +23,7 @@ import os
 import logging
 import time
 import random
+import json
 import torch as th
 
 from .dataloader import EvalDataset, TrainDataset, NewBidirectionalOneShotIterator
@@ -415,7 +416,6 @@ def main():
         train(args, model, train_sampler, valid_samplers, test_samplers, rel_parts=rel_parts)
 
     print('training takes {} seconds'.format(time.time() - start))
-
 
 if __name__ == '__main__':
     main()
