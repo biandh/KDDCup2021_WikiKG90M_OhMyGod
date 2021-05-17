@@ -342,6 +342,9 @@ class ExternalEmbedding:
                 clr = self.args.lr
                 if self.state_step % 3 == 1:
                     print('clr:', clr)
+
+                if self.args.use_lr_decay:
+                    clr = self.args.lr * 1.0 / (1 + self.state_step / 3 * 0.0001)
                 #clr = self.args.lr / (1 + (self.state_step - 1) * group['lr_decay'])
 
                 # the update is non-linear so indices must be unique

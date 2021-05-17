@@ -172,15 +172,16 @@ class InferModel(object):
 
 
 class MLP(torch.nn.Module):
-    def __init__(self, input_entity_dim, entity_dim, input_relation_dim, relation_dim):
+    def __init__(self, input_entity_dim, entity_dim, input_relation_dim, relation_dim, args):
         super(MLP, self).__init__()
+        self.args = args
         self.transform_e_net = torch.nn.Linear(input_entity_dim, entity_dim)
-        self.transform_e_net_v2 = torch.nn.Linear(entity_dim, entity_dim)
-
         self.transform_r_net = torch.nn.Linear(input_relation_dim, relation_dim)
-        self.transform_r_net_v2 = torch.nn.Linear(relation_dim, relation_dim)
-
-        self.dropout = nn.Dropout(0.1)
+        if args.use_2_layer_mlp:
+            print('use_2_layer_mlp')
+            self.transform_e_net_v2 = torch.nn.Linear(entity_dim, entity_dim)
+            self.transform_r_net_v2 = torch.nn.Linear(relation_dim, relation_dim)
+            self.dropout = nn.Dropout(0.1)
 
         self.reset_parameters()
 
@@ -188,27 +189,34 @@ class MLP(torch.nn.Module):
         # print("embedding", embeddings.device)
         # print("e_net", self.transform_e_net.weight.device)
         feature = self.transform_e_net(embeddings)
-        x = torch.nn.functional.leaky_relu(feature)
-        x = self.dropout(x)
-
-        score = self.transform_e_net_v2(feature)
+        if self.args.use_2_layer_mlp:
+            x = torch.nn.functional.leaky_relu(feature)
+            x = self.dropout(x)
+            score = self.transform_e_net_v2(feature)
+        else:
+            score = feature
         return score
         # return self.transform_e_net(embeddings)
 
     def embed_relation(self, embeddings):
         feature = self.transform_r_net(embeddings)
-        x = torch.nn.functional.leaky_relu(feature)
-        x = self.dropout(x)
+        if self.args.use_2_layer_mlp:
+            x = torch.nn.functional.leaky_relu(feature)
+            x = self.dropout(x)
+            score = self.transform_r_net_v2(feature)
+        else:
+            score = feature
 
-        score = self.transform_r_net_v2(feature)
         return score
         # return self.transform_r_net(embeddings)
 
     def reset_parameters(self):
         nn.init.xavier_uniform_(self.transform_r_net.weight)
-        nn.init.xavier_uniform_(self.transform_r_net_v2.weight)
         nn.init.xavier_uniform_(self.transform_e_net.weight)
-        nn.init.xavier_uniform_(self.transform_e_net_v2.weight)
+        if self.args.use_2_layer_mlp:
+            print('reset_parameters, use_2_layer_mlp')
+            nn.init.xavier_uniform_(self.transform_r_net_v2.weight)
+            nn.init.xavier_uniform_(self.transform_e_net_v2.weight)
 
 
 class KEModel(object):
