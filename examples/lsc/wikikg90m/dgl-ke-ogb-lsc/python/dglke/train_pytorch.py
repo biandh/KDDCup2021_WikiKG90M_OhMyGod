@@ -56,6 +56,7 @@ from tqdm import tqdm
 import pickle
 from math import ceil
 
+g_cur_path = os.path.dirname(os.path.abspath(__file__)) + '/'
 
 def load_model(args, n_entities, n_relations, ent_feat_dim, rel_feat_dim, ckpt=None):
     model = KEModel(args, args.model_name, n_entities, n_relations,
@@ -228,10 +229,11 @@ def train(args, model, train_sampler, valid_samplers=None, test_samplers=None, r
 
                     save_model(args, model, None, None) #保存2个最佳的模型
                     if os.path.exists(max_mrr_path[0]):
-                        print('delete_path:', max_mrr_path[0])
-                        cmd = 'rm -rf ' + max_mrr_path[0]
+                        print('delete_path:', g_cur_path + max_mrr_path[0])
+                        cmd = 'rm -rf ' + g_cur_path + max_mrr_path[0]
                         print('cmd:', cmd)
-                        os.system(cmd)
+                        status = os.system(cmd)
+                        print('cmd status:', status)
 
                     max_mrr_path = max_mrr_path[1:] + [args.save_path]
                     print('proc {} model saved'.format(rank))
