@@ -85,8 +85,21 @@ class ArgParser(CommonArgParser):
 
         self.add_argument('--dtype', type=int, default=16,
                           help='eval')
+
         self.add_argument('--use_mmap', type=int, default=1,
                           help='mode param not be init')
+
+        self.add_argument('--use_valid_train', type=int, default=0,
+                          help='mode param not be init')
+
+        self.add_argument('--use_lr_decay', type=int, default=0,
+                          help='todo')
+
+        self.add_argument('--use_relation_weight', type=int, default=0,
+                          help='todo')
+
+        self.add_argument('--use_2_layer_mlp', type=int, default=1,
+                          help='todo')
 
 
 def prepare_save_path(args):
