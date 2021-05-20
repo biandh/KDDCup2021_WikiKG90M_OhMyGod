@@ -6,7 +6,7 @@ import torch as th
 def get_realtion_result(candidate_score, args=None):
     """
     """
-    candidate_score = {'h,r->t': candidate_score}
+    # candidate_score = {'h,r->t': candidate_score}
 
     hr = candidate_score['h,r->t']['h,r']
 
@@ -30,15 +30,15 @@ def get_realtion_result(candidate_score, args=None):
             index = -1
             #print('---===============')
         #print(candidate[i])
-        cor_num = candidate[i][predict['h,r->t']['t_correct_index'][i]]
-        top10_num = []
-        for id in predict['h,r->t']['t_pred_top10'][i]:
-            top10_num.append(candidate[i][id])
+        # cor_num = candidate[i][predict['h,r->t']['t_correct_index'][i]]
+        # top10_num = []
+        # for id in predict['h,r->t']['t_pred_top10'][i]:
+        #     top10_num.append(candidate[i][id])
 
         # print('%s\t%s' % (a.tolist()[1], index + 1))
         #if i > 100: break
         r = a.tolist()[1]
-        position = index + 1
+        position = str(index + 1)
         if r not in tt:
           tt[r] = {'0':0.000001, '1':0.000001, '2':0.000001, '3':0.000001, '4':0.000001, '5':0.000001, '6':0.000001, '7':0.000001, '8':0.000001, '9':0.000001, '10':0.000002}
 
@@ -46,7 +46,7 @@ def get_realtion_result(candidate_score, args=None):
 
     aa = sorted(tt.items(), key=lambda x:int(x[0]))
 
-    path = (args.args.save_path + '/' + 'predict_result_analyse.csv') if args is not None else 'predict_result_analyse.csv'
+    path = (args.save_path + '/' + 'predict_result_analyse.csv') if args is not None else 'predict_result_analyse.csv'
 
     fp = open(path, 'w+')
 
