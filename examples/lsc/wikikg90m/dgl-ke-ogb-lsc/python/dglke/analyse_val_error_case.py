@@ -37,7 +37,7 @@ def get_realtion_result(candidate_score, args=None):
 
         # print('%s\t%s' % (a.tolist()[1], index + 1))
         #if i > 100: break
-        r = a.tolist()[1]
+        r = str(a.tolist()[1])
         position = str(index + 1)
         if r not in tt:
           tt[r] = {'0':0.000001, '1':0.000001, '2':0.000001, '3':0.000001, '4':0.000001, '5':0.000001, '6':0.000001, '7':0.000001, '8':0.000001, '9':0.000001, '10':0.000002}
