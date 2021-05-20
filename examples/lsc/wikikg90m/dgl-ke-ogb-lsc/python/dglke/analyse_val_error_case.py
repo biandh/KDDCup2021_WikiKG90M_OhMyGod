@@ -2,6 +2,7 @@ import json
 import sys
 import numpy as np
 import torch as th
+import os
 
 def get_realtion_result(candidate_score, args=None):
     """
@@ -47,7 +48,8 @@ def get_realtion_result(candidate_score, args=None):
     aa = sorted(tt.items(), key=lambda x:int(x[0]))
 
     path = (args.save_path + '/' + 'predict_result_analyse.csv') if args is not None else 'predict_result_analyse.csv'
-
+    if args is not None and not os.path.exists(args.save_path): #ckpts/
+        os.mkdir(args.save_path)
     fp = open(path, 'w+')
 
     for r, i in aa:
