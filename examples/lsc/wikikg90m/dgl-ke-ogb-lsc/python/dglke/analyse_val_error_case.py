@@ -52,6 +52,7 @@ def get_realtion_result(candidate_score, args=None):
         os.mkdir(args.save_path)
     fp = open(path, 'w+')
 
+    tmp = []
     for r, i in aa:
         mrr = 0
         count = 0
@@ -64,7 +65,12 @@ def get_realtion_result(candidate_score, args=None):
             i[str(t)] = int(i[str(t)])
         mrr = mrr / count
         count = int(count)
-        des = r + '\t' + str(i['0']) + '\t' + str(i['1']) + '\t' + str(i['2']) + '\t' + str(i['3']) + '\t' + str(i['4']) + '\t' + str(i['5'])+ '\t' + str(i['6']) + '\t' + str(i['7']) + '\t' + str(i['8']) + '\t' + str(i['9']) + '\t' + str(i['10']) + '\t' + str(mrr) + '\t' + str(count)
-        fp.write(des + '\n')
+        des = r + '\t' + str(i['0']) + '\t' + str(i['1']) + '\t' + str(i['2']) + '\t' + str(i['3']) + '\t' + str(i['4']) + '\t' + str(i['5']) + '\t' + str(i['6']) + '\t' + str(i['7']) + '\t' + str(i['8']) + '\t' + str(i['9']) + '\t' + str(i['10']) + '\t' + str(mrr) + '\t' + str(count)
+        tmp.append([des, (1 - mrr) * count])
+        # fp.write(des + '\n')
 
+    tmp = sorted(tmp, key=lambda x:int(x[1]), reverse=True)
+
+    for t in tmp:
+        fp.write(t[0] + '\n')
     fp.close()
