@@ -55,6 +55,7 @@ from ogb.lsc import WikiKG90MDataset, WikiKG90MEvaluator
 from tqdm import tqdm
 import pickle
 from math import ceil
+from .analyse_val_error_case import get_realtion_result
 
 g_cur_path = os.path.dirname(os.path.abspath(__file__)) + '/'
 
@@ -205,6 +206,8 @@ def train(args, model, train_sampler, valid_samplers=None, test_samplers=None, r
                 args.save_path = args.save_path.split("_mrr")[0] + '_mrr_%s_step_%s' % (ret['mrr'], step)
                 if args.use_valid_train:
                     args.save_path = args.save_path + '_model_valid'
+
+                get_realtion_result(candidate_score, args) #relation mrr statis analyse
 
                 if ret['mrr'] > 0.85:
                     if not os.path.exists(args.save_path):
