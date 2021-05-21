@@ -207,13 +207,13 @@ def train(args, model, train_sampler, valid_samplers=None, test_samplers=None, r
                 if args.use_valid_train:
                     args.save_path = args.save_path + '_model_valid'
 
-                get_realtion_result(candidate_score, args) #relation mrr statis analyse
-
-                if ret['mrr'] > 0.85:
+                if ret['mrr'] > 0.8:
                     if not os.path.exists(args.save_path):
                         os.mkdir(args.save_path)
                     th.save(valid_input_dict, os.path.join(args.save_path, "valid_{}_{}_mrr_{}.pkl".format(rank, step, ret['mrr'])))
                     th.save(candidate_score, os.path.join(args.save_path, "valid_candidate_score_{}_{}_mrr_{}.pkl".format(rank, step, ret['mrr'])))
+
+                get_realtion_result(candidate_score, args)  # relation mrr statis analyse
 
                 if rank == 0 and not args.no_save_emb and max_mrr < ret['mrr'] and ret['mrr'] > 0.80:
                     max_mrr = ret['mrr']

@@ -69,7 +69,7 @@ def get_realtion_result(candidate_score, args=None):
         tmp.append([des, (1 - mrr) * count])
         # fp.write(des + '\n')
 
-    tmp = sorted(tmp, key=lambda x:int(x[1]), reverse=True)
+    tmp = sorted(tmp, key=lambda x:x[1], reverse=True)
 
     for t in tmp:
         fp.write(t[0] + '\n')
