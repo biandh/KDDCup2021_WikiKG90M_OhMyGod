@@ -51,7 +51,7 @@ def get_realtion_result(candidate_score, args=None):
     if args is not None and not os.path.exists(args.save_path): #ckpts/
         os.mkdir(args.save_path)
     fp = open(path, 'w+')
-
+    print('predict_result_analyse_path:', path)
     tmp = []
     for r, i in aa:
         mrr = 0

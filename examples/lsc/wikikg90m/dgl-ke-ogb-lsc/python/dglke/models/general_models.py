@@ -271,7 +271,7 @@ class KEModel(object):
         self.loss_gen = LossGenerator(args, args.loss_genre, args.neg_adversarial_sampling,
                                       args.adversarial_temperature, args.pairwise)
 
-        if self.encoder_model_name in ['shallow', 'concat']:
+        if self.encoder_model_name in ['shallow', 'concat', 'shallow_net']:
             self.entity_emb = ExternalEmbedding(args, n_entities, entity_dim, F.cpu() if args.mix_cpu_gpu else device)
 
         if self.encoder_model_name in ['roberta', 'concat']:
@@ -292,7 +292,7 @@ class KEModel(object):
             rel_dim = rel_dim * 2
             print('---PairRE, rel_dim: ', rel_dim)
 
-        self.use_mlp = self.encoder_model_name in ['concat', 'roberta']
+        self.use_mlp = self.encoder_model_name in ['concat', 'roberta', 'shallow_net']
 
         if self.encoder_model_name == 'concat':
             print('entity_dim + ent_feat_dim: ', entity_dim + ent_feat_dim)
@@ -300,12 +300,14 @@ class KEModel(object):
             print('relation_dim + rel_feat_dim: ', relation_dim + rel_feat_dim)
             print('relation_dim: ', relation_dim)
             print('use self.transform_net')
-
             self.transform_net = MLP(entity_dim + ent_feat_dim, entity_dim, relation_dim + rel_feat_dim, relation_dim, args)
             # self.transform_e_net = torch.nn.Linear(entity_dim, entity_dim)
             # self.transform_r_net = torch.nn.Linear(relation_dim, relation_dim)
         elif self.encoder_model_name == 'roberta':
             self.transform_net = MLP(ent_feat_dim, entity_dim, rel_feat_dim, relation_dim, args)
+
+        elif self.encoder_model_name == 'shallow_net':
+            self.transform_net = MLP(entity_dim, entity_dim, rel_dim, rel_dim, args)
 
         self.rel_dim = rel_dim
         self.entity_dim = entity_dim
@@ -316,7 +318,7 @@ class KEModel(object):
         assert not self.strict_rel_part and not self.soft_rel_part
 
         if not self.strict_rel_part and not self.soft_rel_part:
-            if self.encoder_model_name in ['shallow', 'concat']:
+            if self.encoder_model_name in ['shallow', 'concat', 'shallow_net']:
                 print('--use relation_emb--')
                 self.relation_emb = ExternalEmbedding(args, n_relations, rel_dim,
                                                       F.cpu() if args.mix_cpu_gpu else device)
@@ -399,10 +401,10 @@ class KEModel(object):
         dataset : str
             Dataset name as prefix to the saved embeddings.
         """
-        if self.encoder_model_name in ['shallow', 'concat'] and self.args.save_entity_emb:
+        if self.encoder_model_name in ['shallow', 'concat', 'shallow_net'] and self.args.save_entity_emb:
             self.entity_emb.save(path, dataset + '_' + self.model_name + '_entity')
 
-        if self.encoder_model_name in ['roberta', 'concat'] and self.args.save_mlp:
+        if self.encoder_model_name in ['roberta', 'concat', 'shallow_net'] and self.args.save_mlp:
             torch.save({'transform_state_dict': self.transform_net.state_dict()},
                        os.path.join(path, dataset + "_" + self.model_name + "_mlp"))
 
@@ -410,7 +412,7 @@ class KEModel(object):
             if self.args.save_rel_emb:
                 self.global_relation_emb.save(path, dataset + '_' + self.model_name + '_relation')
         else:
-            if self.encoder_model_name in ['shallow', 'concat'] and self.args.save_rel_emb:
+            if self.encoder_model_name in ['shallow', 'concat', 'shallow_net'] and self.args.save_rel_emb:
                 self.relation_emb.save(path, dataset + '_' + self.model_name + '_relation')
 
         self.score_func.save(path, dataset + '_' + self.model_name)
@@ -425,7 +427,7 @@ class KEModel(object):
             Dataset name as prefix to the saved embeddings.
         """
 
-        if self.encoder_model_name in ['roberta', 'concat']:
+        if self.encoder_model_name in ['roberta', 'concat', 'shallow_net']:
             print('---load_emb transform_net: ', path)
             mlp_net = torch.load(os.path.join(path, dataset + "_" + self.model_name + "_mlp"))
             self.transform_net.load_state_dict(mlp_net['transform_state_dict'])
@@ -445,14 +447,14 @@ class KEModel(object):
     def reset_parameters(self):
         """Re-initialize the model.
         """
-        if self.encoder_model_name in ['shallow', 'concat'] and not self.args.is_eval:
+        if self.encoder_model_name in ['shallow', 'concat', 'shallow_net'] and not self.args.is_eval:
             print('---entity_emb.init')
             self.entity_emb.init(self.emb_init)
 
         self.score_func.reset_parameters()
 
         if (not self.strict_rel_part) and (not self.soft_rel_part):
-            if self.encoder_model_name in ['shallow', 'concat'] and not self.args.is_eval:
+            if self.encoder_model_name in ['shallow', 'concat', 'shallow_net'] and not self.args.is_eval:
                 print('---relation_emb.init')
                 self.relation_emb.init(self.emb_init)
 
@@ -514,6 +516,8 @@ class KEModel(object):
             neg_head_ids = neg_g.ndata['id'][neg_g.head_nid]
             if self.encoder_model_name == 'roberta':
                 neg_head = self.transform_net.embed_entity(self.entity_feat(neg_head_ids, gpu_id, False))
+            elif self.encoder_model_name == 'shallow_net':
+                neg_head = self.transform_net.embed_entity(self.entity_emb(neg_head_ids, gpu_id, trace))
             elif self.encoder_model_name == 'shallow':
                 neg_head = self.entity_emb(neg_head_ids, gpu_id, trace)
             elif self.encoder_model_name == 'concat':
@@ -553,8 +557,13 @@ class KEModel(object):
             # print('--neg_tail_ids.shape:', neg_tail_ids.shape)
             if self.encoder_model_name == 'roberta':
                 neg_tail = self.transform_net.embed_entity(self.entity_feat(neg_tail_ids, gpu_id, False))
+
+            elif self.encoder_model_name == 'shallow_net':
+                neg_tail = self.transform_net.embed_entity(self.entity_emb(neg_tail_ids, gpu_id, trace))
+
             elif self.encoder_model_name == 'shallow':
                 neg_tail = self.entity_emb(neg_tail_ids, gpu_id, trace)
+
             elif self.encoder_model_name == 'concat':
                 neg_tail = self.transform_net.embed_entity(
                     torch.cat([
@@ -622,10 +631,17 @@ class KEModel(object):
                 neg_tail = self.transform_net.embed_entity(self.entity_feat(candidate.view(-1), gpu_id, False))
                 head = self.transform_net.embed_entity(self.entity_feat(query[:, 0], gpu_id, False))
                 rel = self.transform_net.embed_relation(self.relation_feat(query[:, 1], gpu_id, False))
+
+            elif self.encoder_model_name == 'shallow_net':
+                neg_tail = self.transform_net.embed_entity(self.entity_emb(candidate.view(-1), gpu_id, False))
+                head = self.transform_net.embed_entity(self.entity_emb(query[:, 0], gpu_id, False))
+                rel = self.transform_net.embed_relation(self.relation_emb(query[:, 1], gpu_id, False))
+
             elif self.encoder_model_name == 'shallow':
                 neg_tail = self.entity_emb(candidate.view(-1), gpu_id, False)
                 head = self.entity_emb(query[:, 0], gpu_id, False)
                 rel = self.relation_emb(query[:, 1], gpu_id, False)
+
             elif self.encoder_model_name == 'concat':
                 neg_tail = self.transform_net.embed_entity(torch.cat(
                     [self.entity_feat(candidate.view(-1), gpu_id, False),
@@ -682,6 +698,10 @@ class KEModel(object):
             pos_g.ndata['emb'] = self.transform_net.embed_entity(self.entity_feat(pos_g.ndata['id'], gpu_id, False))
             pos_g.edata['emb'] = self.transform_net.embed_relation(self.relation_feat(pos_g.edata['id'], gpu_id, False))
 
+        if self.encoder_model_name == 'shallow_net':
+            pos_g.ndata['emb'] = self.transform_net.embed_entity(self.entity_emb(pos_g.ndata['id'], gpu_id, True))
+            pos_g.edata['emb'] = self.transform_net.embed_relation(self.relation_emb(pos_g.edata['id'], gpu_id, True))
+
         elif self.encoder_model_name == 'shallow':
             pos_g.ndata['emb'] = self.entity_emb(pos_g.ndata['id'], gpu_id, True)
             pos_g.edata['emb'] = self.relation_emb(pos_g.edata['id'], gpu_id, True)
@@ -736,11 +756,12 @@ class KEModel(object):
         loss, log = self.loss_gen.get_total_loss(pos_score, neg_score, edge_weight)
         # regularization: TODO(zihao)
         # TODO: only reg ent&rel embeddings. other params to be added.
-        if self.args.regularization_coef > 0.0 and self.args.regularization_norm > 0 and self.encoder_model_name in [
-            'concat', 'shallow']:
+        if self.args.regularization_coef > 0.0 and self.args.regularization_norm > 0 and \
+                self.encoder_model_name in ['concat', 'shallow', 'shallow_net']:
             coef, nm = self.args.regularization_coef, self.args.regularization_norm
-            reg = coef * (norm(self.entity_emb.curr_emb().type(th.float32), nm) + norm(
-                self.relation_emb.curr_emb().type(th.float32), nm))
+            reg = coef * (norm(self.entity_emb.curr_emb().type(th.float32), nm)
+                          + norm(self.relation_emb.curr_emb().type(th.float32), nm)
+                          )
             log['regularization'] = get_scalar(reg)
             loss = loss + reg
 
@@ -751,7 +772,7 @@ class KEModel(object):
         gpu_id : int
             Which gpu to accelerate the calculation. if -1 is provided, cpu is used.
         """
-        if self.encoder_model_name in ['shallow', 'concat']:
+        if self.encoder_model_name in ['shallow', 'concat', 'shallow_net']:
             self.entity_emb.update(gpu_id)
             self.relation_emb.update(gpu_id)
             self.score_func.update(gpu_id)
@@ -806,13 +827,13 @@ class KEModel(object):
     def create_async_update(self):
         """Set up the async update for entity embedding.
         """
-        if self.encoder_model_name in ['shallow', 'concat']:
+        if self.encoder_model_name in ['shallow', 'concat', 'shallow_net']:
             self.entity_emb.create_async_update()
 
     def finish_async_update(self):
         """Terminate the async update for entity embedding.
         """
-        if self.encoder_model_name in ['shallow', 'concat']:
+        if self.encoder_model_name in ['shallow', 'concat', 'shallow_net']:
             self.entity_emb.finish_async_update()
 
     def pull_model(self, client, pos_g, neg_g):

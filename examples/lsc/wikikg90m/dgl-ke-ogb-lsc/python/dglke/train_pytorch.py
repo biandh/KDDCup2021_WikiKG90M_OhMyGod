@@ -96,9 +96,10 @@ def train(args, model, train_sampler, valid_samplers=None, test_samplers=None, r
     if args.soft_rel_part:
         model.prepare_cross_rels(cross_rels)
 
-    if args.encoder_model_name in ['roberta', 'concat']:
+    if args.encoder_model_name in ['roberta', 'concat', 'shallow_net']:
         # print('train---gpu_id:', gpu_id)
-        # model.transform_net = model.transform_net.to(th.device('cuda:' + str(gpu_id)))
+        if int(gpu_id) >= 0:
+            model.transform_net = model.transform_net.to(th.device('cuda:' + str(gpu_id)))
         print('---optimizer: Adam')
         optimizer = th.optim.Adam(model.transform_net.parameters(), args.mlp_lr)
     else:
@@ -138,7 +139,7 @@ def train(args, model, train_sampler, valid_samplers=None, test_samplers=None, r
         if optimizer is not None:
             optimizer.zero_grad()
         loss, log = model.forward(pos_g, neg_g, gpu_id, rank=rank)
-        print("[proc ", rank, "] start step: ", step, 'loss:', loss.detach().numpy().tolist())
+        print("[proc ", rank, "] start step: ", step, 'loss:', loss.cpu().detach().numpy().tolist())
         # print('---loss: ', loss, 'step: ', step)
 
         forward_time += time.time() - start1
@@ -213,6 +214,7 @@ def train(args, model, train_sampler, valid_samplers=None, test_samplers=None, r
                     th.save(valid_input_dict, os.path.join(args.save_path, "valid_{}_{}_mrr_{}.pkl".format(rank, step, ret['mrr'])))
                     th.save(candidate_score, os.path.join(args.save_path, "valid_candidate_score_{}_{}_mrr_{}.pkl".format(rank, step, ret['mrr'])))
 
+                print('get_realtion_result_error--')
                 get_realtion_result(candidate_score, args)  # relation mrr statis analyse
 
                 if rank == 0 and not args.no_save_emb and max_mrr < ret['mrr'] and ret['mrr'] > 0.80:
