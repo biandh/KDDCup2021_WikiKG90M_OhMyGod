@@ -66,7 +66,7 @@ def get_realtion_result(candidate_score, args=None):
         mrr = mrr / count
         count = int(count)
         des = r + '\t' + str(i['0']) + '\t' + str(i['1']) + '\t' + str(i['2']) + '\t' + str(i['3']) + '\t' + str(i['4']) + '\t' + str(i['5']) + '\t' + str(i['6']) + '\t' + str(i['7']) + '\t' + str(i['8']) + '\t' + str(i['9']) + '\t' + str(i['10']) + '\t' + str(mrr) + '\t' + str(count)
-        tmp.append([des, (1 - mrr) * count])
+        tmp.append([des, (1 - mrr) * count * 5])
         # fp.write(des + '\n')
 
     tmp = sorted(tmp, key=lambda x:x[1], reverse=True)
