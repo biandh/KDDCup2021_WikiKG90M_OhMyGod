@@ -429,8 +429,13 @@ class KEModel(object):
 
         if self.encoder_model_name in ['roberta', 'concat', 'shallow_net']:
             print('---load_emb transform_net: ', path)
-            mlp_net = torch.load(os.path.join(path, dataset + "_" + self.model_name + "_mlp"))
-            self.transform_net.load_state_dict(mlp_net['transform_state_dict'])
+            if os.path.exists(os.path.join(path, dataset + "_" + self.model_name + "_mlp")):
+                mlp_net = torch.load(os.path.join(path, dataset + "_" + self.model_name + "_mlp"))
+                self.transform_net.load_state_dict(mlp_net['transform_state_dict'])
+            else:
+                print('*******transform_net is not exists, reset_parameters ************')
+                self.transform_net.reset_parameters()
+
 
         if self.args.dtype == 16:
             print('---load_emb float16 path: ', path)
