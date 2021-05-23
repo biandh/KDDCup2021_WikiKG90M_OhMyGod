@@ -261,12 +261,12 @@ class KEModel(object):
         relation_dim = 2 * hidden_dim if double_relation_emb else hidden_dim
 
         self.encoder_model_name = args.encoder_model_name
+        device = get_device(args)
 
         if args.use_relation_weight:
-            self.relation_weight = np.load(args.data_path + '/wikikg90m_kddcup2021/processed/relation_weigth.npy')
+            self.relation_weight = np.load(args.data_path + '/wikikg90m_kddcup2021/processed/relation_weight.npy')
             print('--use_relation_weight--:', self.relation_weight.shape)
-
-        device = get_device(args)
+            print('relation_weight:', self.relation_weight.tolist())
 
         self.loss_gen = LossGenerator(args, args.loss_genre, args.neg_adversarial_sampling,
                                       args.adversarial_temperature, args.pairwise)
@@ -435,7 +435,6 @@ class KEModel(object):
             else:
                 print('*******transform_net is not exists, reset_parameters ************')
                 self.transform_net.reset_parameters()
-
 
         if self.args.dtype == 16:
             print('---load_emb float16 path: ', path)
@@ -669,16 +668,19 @@ class KEModel(object):
 
         return neg_score.squeeze(dim=1)
 
-    def get_loss_weigth(self, pos_g, neg_g):
+    def get_loss_weigth(self, pos_g, neg_g, gpu_id=-1):
         """
         """
         # head_ids, tail_ids = pos_g.all_edges(order='eid')
         rel_ids = pos_g.edata['id']
-        # print('rel_ids.shape:', rel_ids.shape)
+        print('rel_ids.shape:', rel_ids.shape)
         weigth = self.relation_weight[rel_ids]
-        # print('weigth.shape:', weigth.shape)
-
-        return th.from_numpy(weigth)
+        print('weigth.shape:', weigth.shape)
+        w = th.from_numpy(weigth)
+        if int(gpu_id) >=0:
+            w = w.to(th.device('cuda:' + str(gpu_id)))
+        print('w.shape:', w.shape)
+        return w
 
     # @profile
     def forward(self, pos_g, neg_g, gpu_id=-1, rank=0):
@@ -753,8 +755,8 @@ class KEModel(object):
         #    pos_score = (pos_score * subsampling_weight).sum() / subsampling_weight.sum()
         #    neg_score = (neg_score * subsampling_weight).sum() / subsampling_weight.sum()
         # else:
-        edge_weight = F.copy_to(pos_g.edata['impts'], get_dev(gpu_id)) if self.has_edge_importance else None
-        # edge_weight = self.get_loss_weigth(pos_g, neg_g) if self.args.use_relation_weight else None
+        # edge_weight = F.copy_to(pos_g.edata['impts'], get_dev(gpu_id)) if self.has_edge_importance else None
+        edge_weight = self.get_loss_weigth(pos_g, neg_g, gpu_id) if self.args.use_relation_weight else None
         # print('edge_weight:', edge_weight)
         # print('pos_score.shape:', pos_score.shape)
         # print('neg_score.shape:', neg_score.shape)

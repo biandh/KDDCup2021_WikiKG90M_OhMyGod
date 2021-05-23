@@ -76,8 +76,17 @@ class LossGenerator(BaseLossGenerator):
             log['loss'] = get_scalar(loss)
             return loss, log
 
-        pos_loss = self._get_pos_loss(pos_score) * edge_weight
-        neg_loss = self._get_neg_loss(neg_score) * edge_weight
+        pos_loss = self._get_pos_loss(pos_score)
+        print('pos_loss.shape:', pos_loss.shape)
+        pos_loss = pos_loss * edge_weight
+
+        neg_loss = self._get_neg_loss(neg_score)
+        print('neg_loss.shape:', neg_loss.shape)
+        if not isinstance(edge_weight, int) and len(edge_weight.shape) == 1:
+            edge_weight = th.unsqueeze(edge_weight, 1)
+            print('edge_weight.shape:', edge_weight.shape)
+
+        neg_loss = neg_loss * edge_weight
         # MARK - would average twice make loss function lose precision?
         # do mean over neg_sample
         if self.neg_adversarial_sampling:
