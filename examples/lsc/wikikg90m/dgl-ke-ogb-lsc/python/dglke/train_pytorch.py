@@ -184,6 +184,17 @@ def train(args, model, train_sampler, valid_samplers=None, test_samplers=None, r
                 backward_time = 0
                 start = time.time()
 
+            # 开始部分超参数手动更新
+            param_path = args.save_path.split("_mrr")[0]
+            param_dict = json.load(open(param_path + '/config.json'))
+            if param_dict['lr'] != args.lr:
+                print('update lr from %s to %s' % (args.lr, param_dict['lr']))
+                args.lr = param_dict['lr']
+            else:
+                print('not update lr:', args.lr)
+
+            param_dict = None
+
         # if True:
         if args.valid and (step + 1) % args.eval_interval == 0 and step > 1 and valid_samplers is not None or \
                 valid_samplers is not None and step == 20:
