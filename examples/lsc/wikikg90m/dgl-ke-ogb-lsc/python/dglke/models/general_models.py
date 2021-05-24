@@ -283,7 +283,6 @@ class KEModel(object):
             rel_dim = relation_dim * entity_dim
         else:
             rel_dim = relation_dim
-
         if model_name == 'RotatE':
             rel_dim = rel_dim // 2
             print('---RotatE, rel_dim: ', rel_dim)
@@ -528,8 +527,8 @@ class KEModel(object):
                 neg_head = self.transform_net.embed_entity(torch.cat(
                     [self.entity_feat(neg_head_ids, gpu_id, False), self.entity_emb(neg_head_ids, gpu_id, trace)], -1))
 
-            if neg_head.dtype == th.float16:
-                neg_head = neg_head.type(th.float32)
+            if neg_head.dtype == torch.float16:
+                neg_head = neg_head.type(torch.float32)
 
             head_ids, tail_ids = pos_g.all_edges(order='eid')
             if to_device is not None and gpu_id >= 0:
@@ -575,8 +574,8 @@ class KEModel(object):
                         self.entity_emb(neg_tail_ids, gpu_id, trace)
                     ], -1))
 
-            if neg_tail.dtype == th.float16:
-                neg_tail = neg_tail.type(th.float32)
+            if neg_tail.dtype == torch.float16:
+                neg_tail = neg_tail.type(torch.float32)
 
             head_ids, tail_ids = pos_g.all_edges(order='eid')
             if to_device is not None and gpu_id >= 0: head_ids = to_device(head_ids, gpu_id)
@@ -656,10 +655,10 @@ class KEModel(object):
                     [self.relation_feat(query[:, 1], gpu_id, False), self.relation_emb(query[:, 1], gpu_id, False)],
                     -1))
 
-            if head.dtype == th.float16:
-                head = head.type(th.float32)
-                rel = rel.type(th.float32)
-                neg_tail = neg_tail.type(th.float32)
+            if head.dtype == torch.float16:
+                head = head.type(torch.float32)
+                rel = rel.type(torch.float32)
+                neg_tail = neg_tail.type(torch.float32)
 
             neg_score = self.tail_neg_score(head, rel, neg_tail,
                                             num_chunks, chunk_size, neg_sample_size)
@@ -676,9 +675,9 @@ class KEModel(object):
         print('rel_ids.shape:', rel_ids.shape)
         weigth = self.relation_weight[rel_ids]
         print('weigth.shape:', weigth.shape)
-        w = th.from_numpy(weigth)
+        w = torch.from_numpy(weigth)
         if int(gpu_id) >=0:
-            w = w.to(th.device('cuda:' + str(gpu_id)))
+            w = w.to(torch.device('cuda:' + str(gpu_id)))
         print('w.shape:', w.shape)
         return w
 
@@ -731,9 +730,9 @@ class KEModel(object):
                     self.relation_emb(pos_g.edata['id'], gpu_id, True)  # 这里需要注意要不要更新!!!!!!!!
                 ], -1))
 
-        if pos_g.ndata['emb'].dtype == th.float16:
-            pos_g.ndata['emb'] = pos_g.ndata['emb'].type(th.float32)
-            pos_g.edata['emb'] = pos_g.edata['emb'].type(th.float32)
+        if pos_g.ndata['emb'].dtype == torch.float16:
+            pos_g.ndata['emb'] = pos_g.ndata['emb'].type(torch.float32)
+            pos_g.edata['emb'] = pos_g.edata['emb'].type(torch.float32)
 
         self.score_func.prepare(pos_g, gpu_id, True)
 
@@ -766,8 +765,8 @@ class KEModel(object):
         if self.args.regularization_coef > 0.0 and self.args.regularization_norm > 0 and \
                 self.encoder_model_name in ['concat', 'shallow', 'shallow_net']:
             coef, nm = self.args.regularization_coef, self.args.regularization_norm
-            reg = coef * (norm(self.entity_emb.curr_emb().type(th.float32), nm)
-                          + norm(self.relation_emb.curr_emb().type(th.float32), nm)
+            reg = coef * (norm(self.entity_emb.curr_emb().type(torch.float32), nm)
+                          + norm(self.relation_emb.curr_emb().type(torch.float32), nm)
                           )
             log['regularization'] = get_scalar(reg)
             loss = loss + reg
@@ -844,7 +843,7 @@ class KEModel(object):
             self.entity_emb.finish_async_update()
 
     def pull_model(self, client, pos_g, neg_g):
-        with th.no_grad():
+        with torch.no_grad():
             entity_id = F.cat(seq=[pos_g.ndata['id'], neg_g.ndata['id']], dim=0)
             relation_id = pos_g.edata['id']
             entity_id = F.tensor(np.unique(F.asnumpy(entity_id)))
@@ -860,7 +859,7 @@ class KEModel(object):
             self.relation_emb.emb[relation_id] = relation_data
 
     def push_gradient(self, client):
-        with th.no_grad():
+        with torch.no_grad():
             l2g = client.get_local2global()
             for entity_id, entity_data in self.entity_emb.trace:
                 grad = entity_data.grad.data
