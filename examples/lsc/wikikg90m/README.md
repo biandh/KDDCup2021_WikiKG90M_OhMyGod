@@ -54,15 +54,15 @@ This will save the test submission file at `${SAVE_PATH}/t_pred_wikikg90m.npz`.
 
 S/N| Model              |Valid MRR  | Test MRR*   | \#Parameters    | Hardware |Spend Time
 |:------------------|:------------------ |:--------------   |:---------------| --------------:|----------|----------|
-A| TransE-Shallow     | 0.8819 | * | 17.4B  | 380G memery | 5 day 
-B| TransE-Shallow     | 0.8686 | * | 17.4B  | 380G memery | 5 day 
-C| ComplEx-Concat     | 0.8851 | 0.908 | 17.4B  | 380G memery | 3 day  
-D| ComplEx-Concat     | 0.8735 | * | 17.4B  | 380G memery | 3 day 
-E| ComplEx-Concat     | 0.8777 | * | 17.4B  | 380G memery | 3 day  
-F| ComplEx-Concat     | 0.8805 | * | 17.4B  | 380G memery | 3 day 
-G| DistMult-Concat     | 0.8845 | * | 17.4B  | 380G memery | 3 day 
-H| DistMult-Concat     | 0.8706 | * | 17.4B  | 380G memery | 3 day 
-I| SimplE-Concat     | 0.8838 | * | 17.4B  | 380G memery| 3 day 
+A| TransE-Shallow     | 0.8819 | * | 8kw * 768  | 380G memery | 5 day 
+B| TransE-Shallow     | 0.8686 | * | 8kw * 768  | 380G memery | 5 day 
+C| ComplEx-Concat     | 0.8851 | 0.908 | 8kw * 512 + MLP(2 layer;dim = 1280)  | 380G memery | 3 day  
+D| ComplEx-Concat     | 0.8735 | * | 8kw * 512 + MLP(2 layer;dim = 1280)   | 380G memery | 3 day 
+E| ComplEx-Concat     | 0.8777 | * | 8kw * 512 + MLP(2 layer;dim = 1280)   | 380G memery | 3 day  
+F| ComplEx-Concat     | 0.8805 | * | 8kw * 512 + MLP(2 layer;dim = 1280)  | 380G memery | 3 day 
+G| DistMult-Concat     | 0.8845 | * | 8kw * 512 + MLP(2 layer;dim = 1280)   | 380G memery | 3 day 
+H| DistMult-Concat     | 0.8706 | * | 8kw * 512 + MLP(2 layer;dim = 1280)   | 380G memery | 3 day 
+I| SimplE-Concat     | 0.8838 | * | 8kw * 512 + MLP(2 layer;dim = 1280)   | 380G memery| 3 day 
 Ensemble| A * 1.0  + B * 0.4 + C * 0.3 + D * 0.3 + E * 0.3 + F * 0.1 + G * 0.3 + H * 0.8 + I * 0.1|0.9415|*|
 Final|Ensemble + rule | 0.9781 | 0.9712| | 
 
