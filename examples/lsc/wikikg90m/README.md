@@ -64,7 +64,7 @@ G| DistMult-Concat     | 0.8845 | * | 8kw * 512 + MLP(2 layer;dim = 1280)   | 38
 H| DistMult-Concat     | 0.8706 | * | 8kw * 512 + MLP(2 layer;dim = 1280)   | 380G memery | 3 day 
 I| SimplE-Concat     | 0.8838 | * | 8kw * 512 + MLP(2 layer;dim = 1280)   | 380G memery| 3 day 
 Ensemble| A * 1.0  + B * 0.4 + C * 0.3 + D * 0.3 + E * 0.3 + F * 0.1 + G * 0.3 + H * 0.8 + I * 0.1|0.9415|*|
-Final|Ensemble + rule | 0.9781 | 0.9712| | 
+Final|Ensemble + statis_rule | 0.9781 | 0.9712| | 
 
 \* Test MRR is evaluated on the **hidden test set.**
 
