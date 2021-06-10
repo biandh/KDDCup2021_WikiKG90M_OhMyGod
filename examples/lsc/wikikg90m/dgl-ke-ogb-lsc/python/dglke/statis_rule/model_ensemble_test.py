@@ -92,10 +92,10 @@ assert len(mode_path_list) > 0
 for (path, sc) in mode_path_list:
     print('model_path:', path, 'weight:', sc)
 
-test_hr = np.load("/home/work/biandonghai/kdd_2021/wikikg90m_kddcup2021/processed/test_hr.npy")
+test_hr = np.load("test_hr.npy")
 print("test_hr.shape:", test_hr.shape)
 
-test_t_candidate = np.load("/home/work/biandonghai/kdd_2021/wikikg90m_kddcup2021/processed/test_t_candidate.npy", mmap_mode='r')
+test_t_candidate = np.load("test_t_candidate.npy", mmap_mode='r')
 print('test_t_candidate.shape:', test_t_candidate.shape)
 
 start = torch.load(mode_path_list[0][0])['h,r->t']['t_pred_score'].numpy()

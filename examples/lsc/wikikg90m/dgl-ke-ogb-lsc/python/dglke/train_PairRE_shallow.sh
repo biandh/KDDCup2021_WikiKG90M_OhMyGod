@@ -15,4 +15,4 @@ dglke_train --model_name PairRE \
 --use_mmap 1 \
 --eval_interval 50000 \
 --max_step 10000000 \
---data_path /home/work/biandonghai/kdd_2021 \
+--data_path kdd_2021 \

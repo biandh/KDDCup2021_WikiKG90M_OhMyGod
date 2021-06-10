@@ -1,6 +1,6 @@
 # TransE-roberta
 dglke_train --model_name AutoSF \
---hidden_dim 800 --gamma 50 --lr 0.15 --regularization_coef 1e-6 \
+--hidden_dim 768 --gamma 50 --lr 0.15 --regularization_coef 1e-6 \
 --valid -adv --mix_cpu_gpu --num_proc 1 --num_thread 1 \
 --batch_size 2000 \
 --neg_sample_size 2000 \
@@ -15,4 +15,4 @@ dglke_train --model_name AutoSF \
 --use_mmap 1 \
 --eval_interval 25000 \
 --max_step 1000000 \
---data_path /home/work/biandonghai/kdd_2021 \
+--data_path kdd_2021 \
