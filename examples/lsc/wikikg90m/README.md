@@ -54,7 +54,7 @@ This will save the test submission file at `${SAVE_PATH}/t_pred_wikikg90m.npz`.
 
 S/N| Model              |Valid MRR  | Test MRR*   | \#Parameters    | Hardware |Spend Time
 |:------------------|:------------------ |:--------------   |:---------------| --------------:|----------|----------|
-A| TransE-Shallow     | 0.8819 | * | 8kw * 768  | 380G memery | 5 day 
+A| TransE-Shallow     | 0.8819 | * | 8kw(entity + relation) * 768  | 380G memery | 5 day 
 B| TransE-Shallow     | 0.8686 | * | 8kw * 768  | 380G memery | 5 day 
 C| ComplEx-Concat     | 0.8851 | 0.908 | 8kw * 512 + MLP(2 layer;dim = 1280)  | 380G memery | 3 day  
 D| ComplEx-Concat     | 0.8735 | * | 8kw * 512 + MLP(2 layer;dim = 1280)   | 380G memery | 3 day 
