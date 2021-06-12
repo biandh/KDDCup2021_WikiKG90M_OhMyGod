@@ -69,7 +69,7 @@ F| ComplEx-Concat     | 0.8805 | * | 111.3B | 380G memery | 3 day |
 G| DistMult-Concat     | 0.8845 | * | 111.3B | 380G memery | 3 day |
 H| DistMult-Concat     | 0.8706 | * | 111.3B  | 380G memery | 3 day | loss:hinge
 I| SimplE-Concat     | 0.8838 | * | 111.3B | 380G memery| 3 day |
-Ensemble| A * 1.0  + B * 0.4 + C * 0.3 + D * 0.3 + E * 0.3 + F * 0.1 + G * 0.3 + H * 0.8 + I * 0.1|0.9415|*|*|*|*|grid search|
+Ensemble| A * 1.0  + B * 0.4 + C * 0.3 + D * 0.3 + E * 0.3 + F * 0.1 + G * 0.3 + H * 0.8 + I * 0.1|0.9408|*|*|*|*|grid search|
 Final|Ensemble + strategy | 0.9781 | 0.9712| | 
 
 \* Test MRR is evaluated on the **hidden test set.**
