@@ -1,4 +1,4 @@
-#------Train-------
+#----------Train-----------
 # TransE-shallow
 #model A
 dglke_train --model_name TransE_l2 \
@@ -190,7 +190,7 @@ cd dgl-ke-ogb-lsc/python/dglke/strategy/
 python get_val_candidate_freq.py
 python get_test_candidate_freq.py
 
-#-------Eval-------
+#-----------Eval------------
 # TransE-shallow
 
 #dglke_eval --model_name TransE_l2 \
