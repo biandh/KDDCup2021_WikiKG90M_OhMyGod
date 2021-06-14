@@ -1,4 +1,4 @@
-# Baseline code for Wikikg90m
+# Entry code for Wikikg90m
 
 Please refer to the **[OGB-LSC paper](https://arxiv.org/abs/2103.09430)** for the detailed setting.
 
