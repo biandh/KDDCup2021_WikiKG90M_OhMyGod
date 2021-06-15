@@ -63,14 +63,13 @@ S/N| Model              |Valid MRR  | Test MRR*   | \#Parameters    | Hardware |
 |:------------------|:------------------ |:--------------   |:---------------| --------------:|----------|----------|----------|
 A| TransE-Shallow     | 0.8819 | * | 66.8B  | 380G memery | 5 day |
 B| TransE-Shallow     | 0.8686 | * | 66.8B  | 380G memery | 5 day |
-C| ComplEx-Concat     | 0.8851 | * | 111.3B  | 380G memery | 3 day  |
-D| ComplEx-Concat     | 0.8735 | * | 111.3B  | 380G memery | 3 day |
-E| ComplEx-Concat     | 0.8777 | * | 111.3B | 380G memery | 3 day  |
-F| ComplEx-Concat     | 0.8805 | * | 111.3B | 380G memery | 3 day |
-G| DistMult-Concat     | 0.8845 | * | 111.3B | 380G memery | 3 day |
-H| DistMult-Concat     | 0.8706 | * | 111.3B  | 380G memery | 3 day | loss:hinge
-I| SimplE-Concat     | 0.8838 | * | 111.3B | 380G memery| 3 day |
-Ensemble| A * 0.881 + C * 0.885|0.93|0.94|*|*|*||
+C| ComplEx-Concat     | 0.8851 | * | 111.3B  | 380G memery | 2 day  |
+D| ComplEx-Concat     | 0.8735 | * | 111.3B  | 380G memery | 2 day |
+E| ComplEx-Concat     | 0.8777 | * | 111.3B | 380G memery | 2 day  |
+F| ComplEx-Concat     | 0.8805 | * | 111.3B | 380G memery | 2 day |
+G| DistMult-Concat     | 0.8845 | * | 111.3B | 380G memery | 2 day |
+H| DistMult-Concat     | 0.8706 | * | 111.3B  | 380G memery | 2 day | loss:hinge
+I| SimplE-Concat     | 0.8838 | * | 111.3B | 380G memery| 2 day |
 Ensemble| A * 1.0  + B * 0.4 + C * 0.3 + D * 0.3 + E * 0.3 + F * 0.1 + G * 0.3 + H * 0.8 + I * 0.1|0.9408|*|*|*|*|grid search|
 Final|Ensemble + strategy | 0.9781 | 0.9712| | 
 
