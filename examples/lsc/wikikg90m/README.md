@@ -1,5 +1,5 @@
 # Code of Team OhMyGod in the WikiKG90M-LSC track of KDD Cup 2021
-This is the code of Team OhMyGod in the WikiKG90M-LSC track of OGB-LSC @ KDD Cup 2021.
+This is the code of Team OhMyGod in the [WikiKG90M-LSC](https://ogb.stanford.edu/kddcup2021/wikikg90m/) track of OGB-LSC @ KDD Cup 2021.
 
 Team Members: Weihua Peng, Donghai Bian, Guangzhi Sheng, Yanhui Huang, Jian Sun.
 
