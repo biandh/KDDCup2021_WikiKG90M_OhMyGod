@@ -228,7 +228,7 @@ python get_test_candidate_freq.py
 #model ensemble, Use grid search to get higher score weights
 python grid_search_weight.py
 
-#use grid_search weight + val_always_correct_entity_gt_5.pkl file on val dataset ---> MRR:0.9781
+#use grid_search weight + val_always_correct_entity_gt_5.pkl file on val dataset
 python model_ensemble_val.py
 
 #predict test dataset
