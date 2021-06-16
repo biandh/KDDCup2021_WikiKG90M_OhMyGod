@@ -18,7 +18,7 @@ sh -x run.sh
 
 
 ### Acknowledgement 
-Our implementation is based on [DGL-KE](https://github.com/awslabs/dgl-ke).
+Our implementation is based on [OGB](https://github.com/snap-stanford/ogb/tree/master/examples/lsc/wikikg90m).
 
 ## Key commandline arguments
 - `model_name`: Decoder model. Choose from [`TransE_l2`, `ComplEx`].
